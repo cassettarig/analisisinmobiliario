@@ -32,18 +32,38 @@ La fuente utilizada fue un archivo CSV, importado a BigQuery para limpieza preli
 - Distribución del monto en abierto por ciudad de cliente.
 - Listado detallado de clientes a priorizar. Como critérios para esta definición, se clasificaron clientes que no han comprado cuales el último contacto fue menor que 180 dias, nivel de setisfación es alto o medio y score es superior a 0.3.
 
+# Columnas calculadas
+
+Cliente Prioritario = 
+SWITCH(
+    TRUE(),
+    f_interacciones[Es cliente] = True && f_interacciones[dias_desde_ultimo_contacto] <= 180 && OR(f_interacciones[nivel_satisfaccion]="alta",f_interacciones[nivel_satisfaccion]="media") && f_interacciones[score_engagement] >= 0.3, "Y",
+    "N"
+)
+
+Es cliente = 
+IF(
+    f_interacciones[compra_Casa]= 0 &&
+    f_interacciones[compra_Departamento]= 0 &&
+    f_interacciones[compra_Local_comercial]=0 &&
+    f_interacciones[compra_Oficina]=0,
+    True,
+    False
+)
+
+
 # Medidas DAX
 
 Clientes Compradores = 
 CALCULATE(
     DISTINCTCOUNT(d_clientes[id_cliente]),
-f_interacciones[Aun no compra]=FALSE()
+f_interacciones[Es cliente]=FALSE()
 )
 
 Tasa de Conversión = 
  DIVIDE([Clientes Compradores],DISTINCTCOUNT(f_interacciones[id_cliente]))
 
-Total Estimado en Abierto = CALCULATE(SUM(f_interacciones[valor_estimado_propiedades]),f_interacciones[Aun no compra]=True)
+Total Estimado en Abierto = CALCULATE(SUM(f_interacciones[valor_estimado_propiedades]),f_interacciones[Es cliente]=True)
 
 # Insights y Recomendaciones (Respuesta del Objetivo)
 - En el periodo de datos analizado 808 clientes compraron propiedades, lo que representa una conversión de 68,82% del total de clientes de la organización.
